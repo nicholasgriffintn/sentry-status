@@ -1,0 +1,47 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sentry-status",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-16",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "bitwobbly.com", "custom_domain": true }
+  ],
+  "vars": {
+    "SENTRY_API_BASE": "https://de.sentry.io",
+    "SENTRY_ORG": "nicholasgriffintn",
+    "STATUS_PAGES": {
+      "sprintjam": {
+        "title": "SprintJam",
+        "components": [
+          { "name": "Web app", "project": "sprintjam-app" },
+          { "name": "Rooms API", "project": "sprintjam-api" },
+          { "name": "Accounts", "project": "sprintjam-auth" },
+          { "name": "Stats", "project": "sprintjam-stats" },
+          { "name": "Wheel and retros", "project": "sprintjam-wheel-retro" },
+          { "name": "Standups", "project": "sprintjam-standup" }
+        ]
+      },
+      "fosdem-pwa": {
+        "title": "FOSDEM PWA",
+        "components": [
+          { "name": "Web app", "project": "roomisfull-web" },
+          { "name": "Push notifications", "project": "roomisfull-push" },
+          { "name": "Schedule data", "project": "roomisfull-build-data" }
+        ]
+      },
+      "polychat": {
+        "title": "Polychat",
+        "components": [{ "name": "App", "project": "polychat" }]
+      }
+    }
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false
+    }
+  }
+}
