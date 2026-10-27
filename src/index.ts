@@ -1,11 +1,14 @@
 import { parseStatusPages, type StatusPage } from "./config";
 import type { Env } from "./env";
-import { renderStatusPage } from "./render";
+import { htmlResponse } from "./lib/html";
 import { fetchUnresolvedIssues } from "./sentry";
 import { buildReport, overallStatus } from "./status";
+import { renderHomePage } from "./views/home";
+import { renderNotFoundPage } from "./views/not-found";
+import { renderStatusPage } from "./views/status-page";
 
-const CACHE_SECONDS = 60;
-const ROUTE = /^\/status\/([a-z0-9-]+)(\.json)?$/;
+const CACHE_HEADERS = { "Cache-Control": "public, max-age=60" };
+const STATUS_ROUTE = /^\/status\/([a-z0-9-]+)(\.json)?$/;
 
 async function buildPage(env: Env, page: StatusPage, now: Date) {
   const reports = await Promise.all(
@@ -23,17 +26,21 @@ async function buildPage(env: Env, page: StatusPage, now: Date) {
 }
 
 async function handle(request: Request, env: Env): Promise<Response> {
-  const match = ROUTE.exec(new URL(request.url).pathname);
-  const page = match?.[1]
-    ? parseStatusPages(env.STATUS_PAGES).get(match[1])
-    : undefined;
-  if (!match || !page) {
-    return new Response("Not found", { status: 404 });
+  const { pathname } = new URL(request.url);
+  const pages = parseStatusPages(env.STATUS_PAGES);
+  if (pathname === "/") {
+    return htmlResponse(renderHomePage(pages), { headers: CACHE_HEADERS });
+  }
+
+  const match = STATUS_ROUTE.exec(pathname);
+  const slug = match?.[1];
+  const page = slug ? pages.get(slug) : undefined;
+  if (!match || !slug || !page) {
+    return htmlResponse(renderNotFoundPage(), { status: 404 });
   }
 
   const now = new Date();
   const { reports, overall } = await buildPage(env, page, now);
-  const headers = { "Cache-Control": `public, max-age=${CACHE_SECONDS}` };
 
   if (match[2]) {
     return Response.json(
@@ -43,17 +50,19 @@ async function handle(request: Request, env: Env): Promise<Response> {
         components: reports,
         generatedAt: now,
       },
-      { headers },
+      { headers: CACHE_HEADERS },
     );
   }
-  return new Response(renderStatusPage(page.title, overall, reports, now), {
-    headers: {
-      ...headers,
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Security-Policy":
-        "default-src 'none'; style-src 'unsafe-inline'",
-    },
-  });
+  return htmlResponse(
+    renderStatusPage({
+      slug,
+      title: page.title,
+      overall,
+      reports,
+      generatedAt: now,
+    }),
+    { headers: CACHE_HEADERS },
+  );
 }
 
 export default {

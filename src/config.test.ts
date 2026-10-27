@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { parseStatusPages } from "./config";
-import { renderStatusPage } from "./render";
+import { renderStatusPage } from "./views/status-page";
 
 describe("parseStatusPages", () => {
   it("parses valid pages", () => {
@@ -22,6 +22,14 @@ describe("parseStatusPages", () => {
     ).toThrow(/Invalid component/);
   });
 
+  it("rejects page slugs the status route cannot serve", () => {
+    expect(() =>
+      parseStatusPages({
+        "My App": { title: "App", components: [{ name: "Web", project: "app" }] },
+      }),
+    ).toThrow(/Invalid status page/);
+  });
+
   it("rejects pages without components", () => {
     expect(() =>
       parseStatusPages({ app: { title: "App", components: [] } }),
@@ -31,10 +39,11 @@ describe("parseStatusPages", () => {
 
 describe("renderStatusPage", () => {
   it("escapes configured names", () => {
-    const html = renderStatusPage(
-      "<script>x</script>",
-      "operational",
-      [
+    const html = renderStatusPage({
+      slug: "app",
+      title: "<script>x</script>",
+      overall: "operational",
+      reports: [
         {
           name: "<img src=x>",
           status: "operational",
@@ -42,8 +51,8 @@ describe("renderStatusPage", () => {
           eventCount: 0,
         },
       ],
-      new Date(0),
-    );
+      generatedAt: new Date(0),
+    });
     expect(html).not.toContain("<script>x");
     expect(html).not.toContain("<img");
   });

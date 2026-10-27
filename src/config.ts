@@ -10,6 +10,7 @@ export interface StatusPage {
   components: StatusComponent[];
 }
 
+const PAGE_SLUG = /^[a-z0-9-]+$/;
 const PROJECT_SLUG = /^[a-z0-9][a-z0-9_-]*$/;
 
 function parseComponent(value: unknown, page: string): StatusComponent {
@@ -32,6 +33,7 @@ export function parseStatusPages(raw: unknown): Map<string, StatusPage> {
   const pages = new Map<string, StatusPage>();
   for (const [slug, value] of Object.entries(raw)) {
     if (
+      !PAGE_SLUG.test(slug) ||
       !isRecord(value) ||
       !isNonEmptyString(value.title) ||
       !Array.isArray(value.components) ||
